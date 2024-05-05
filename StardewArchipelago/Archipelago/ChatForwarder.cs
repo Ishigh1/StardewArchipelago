@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
+using Newtonsoft.Json;
 using StardewArchipelago.Archipelago.Gifting;
 using StardewArchipelago.GameModifications;
 using StardewArchipelago.GameModifications.CodeInjections;
@@ -166,6 +168,12 @@ namespace StardewArchipelago.Archipelago
                 return true;
             }
 
+            if (HandleTilesanityCommand(messageLower))
+            {
+                _lastCommand = message;
+                return true;
+            }
+
             if (HandleHelpCommand(messageLower))
             {
                 return true;
@@ -319,6 +327,49 @@ namespace StardewArchipelago.Archipelago
             }
 
             ZeldaAnimationInjections.TogglePrank();
+            return true;
+        }
+
+        private static bool HandleTilesanityCommand(string message)
+        {
+            if (message != $"{COMMAND_PREFIX}where")
+#if DEBUG
+                if (message != $"{COMMAND_PREFIX}walk" && message != $"{COMMAND_PREFIX}unwalk")
+#endif
+                    return false;
+            (int x, int y) = Game1.player.TilePoint;
+            Game1.chatBox?.addMessage($"You are currently at {TileSanityManager.GetTileName(x, y, Game1.player)}",
+                Color.Gold);
+            (float f1, float f2) = Game1.currentCursorTile;
+            x = (int)f1;
+            y = (int)f2;
+            string apLocation = TileSanityManager.GetTileName(x, y, Game1.player);
+            string walkable = _archipelago.GetLocationId(apLocation) > -1 ? "walkable" : "not walkable";
+            Game1.chatBox?.addMessage(
+                $"You are currently pointing at {TileSanityManager.GetTileName(x, y, Game1.player)} ({walkable})",
+                Color.Gold);
+#if DEBUG
+            if (message == $"{COMMAND_PREFIX}walk")
+            {
+                const string tileFile = "tiles.json";
+                Dictionary<string, List<Vector2>> dictionary =
+                    JsonConvert.DeserializeObject<Dictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
+                dictionary[Game1.player.currentLocation.DisplayName].Add(Game1.currentCursorTile);
+                dictionary[Game1.player.currentLocation.DisplayName].Sort(((vector2, vector3) =>
+                    vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
+                File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary));
+            }
+            if (message == $"{COMMAND_PREFIX}unwalk")
+            {
+                const string tileFile = "tiles.json";
+                Dictionary<string, List<Vector2>> dictionary =
+                    JsonConvert.DeserializeObject<Dictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
+                dictionary[Game1.player.currentLocation.DisplayName].Remove(Game1.currentCursorTile);
+                dictionary[Game1.player.currentLocation.DisplayName].Sort(((vector2, vector3) =>
+                    vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
+                File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary));
+            }
+#endif
             return true;
         }
 

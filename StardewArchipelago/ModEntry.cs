@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using HarmonyLib;
 using Microsoft.Xna.Framework;
+using Newtonsoft.Json;
 using StardewArchipelago.Archipelago;
 using StardewArchipelago.Archipelago.Gifting;
 using StardewArchipelago.Bundles;
@@ -33,6 +35,7 @@ using StardewArchipelago.Integrations.GenericModConfigMenu;
 using StardewValley.Delegates;
 using StardewValley.Internal;
 using StardewValley.Triggers;
+using xTile;
 
 namespace StardewArchipelago
 {
@@ -70,6 +73,7 @@ namespace StardewArchipelago
         private QuestCleaner _questCleaner;
         private EntranceManager _entranceManager;
         private NightShippingBehaviors _shippingBehaviors;
+        private TileSanityManager _tileSanityManager;
         private HintHelper _hintHelper;
 
         private ModRandomizedLogicPatcher _modLogicPatcher;
@@ -128,6 +132,12 @@ namespace StardewArchipelago
             // _helper.ConsoleCommands.Add("save_entrances", "Saves the entrances file", (_, _) => EntranceInjections.SaveNewEntrancesToFile());
             _helper.ConsoleCommands.Add("export_shippables", "Export all currently loaded shippable items", ExportShippables);
             _helper.ConsoleCommands.Add("release_slot", "Release the current slot completely", ReleaseSlot);
+            _helper.ConsoleCommands.Add("walkable_tiles", "Gets the list of every walkable tile",
+                this.ListWalkableTiles);
+            _helper.ConsoleCommands.Add("walkable_csv", "Gets the csv of every walkable tile",
+                this.ConvertWalkablesToCSV);
+            _helper.ConsoleCommands.Add("current_tile", "Gets the current tile",
+                this.CurrentTile);
             _helper.ConsoleCommands.Add("debug_method", "Runs whatever is currently in the debug method", DebugMethod);
 #endif
 
@@ -320,6 +330,7 @@ namespace StardewArchipelago
                 _bundlesManager = new BundlesManager(_helper, _stardewItemManager, _archipelago.SlotData.BundlesData);
                 _locationsPatcher = new LocationPatcher(Monitor, _helper, _harmony, _archipelago, State, _locationChecker, _stardewItemManager, _weaponsManager, _bundlesManager, seedShopStockModifier, null, friends);
                 _shippingBehaviors = new NightShippingBehaviors(Monitor, _archipelago, _locationChecker, nameSimplifier);
+                _tileSanityManager = new TileSanityManager(_harmony);
                 _chatForwarder.ListenToChatMessages();
                 _logicPatcher.PatchAllGameLogic();
                 _modLogicPatcher = new ModRandomizedLogicPatcher(Monitor, _helper, _harmony, _archipelago, seedShopStockModifier, _stardewItemManager);
@@ -332,6 +343,7 @@ namespace StardewArchipelago
                 _jojaDisabler.DisableJojaMembership();
                 _multiSleep.InjectMultiSleepOption(_archipelago.SlotData);
                 SeasonsRandomizer.ChangeMailKeysBasedOnSeasonsToDaysElapsed();
+                _tileSanityManager.PatchWalk(this.Helper);
                 _modStateInitializer = new InitialModGameStateInitializer(Monitor, _archipelago);
                 _hintHelper = new HintHelper();
                 Game1.chatBox?.addMessage($"Connected to Archipelago as {_archipelago.SlotData.SlotName}. Type !!help for client commands", Color.Green);
@@ -534,6 +546,135 @@ namespace StardewArchipelago
             {
                 _locationChecker.AddCheckedLocation(missingLocation);
             }
+        }
+
+        private void ListWalkableTiles(string arg1, string[] arg2)
+        {
+            Farmer farmer = Game1.player;
+            GameLocation playerCurrentLocation = farmer.currentLocation;
+            List<Vector2> walkables = new();
+            int width = playerCurrentLocation.map.DisplayWidth / 64;
+            int height = playerCurrentLocation.map.DisplayHeight / 64;
+            for (int x = 1; x < width - 1; x++)
+            {
+                for (int y = 1; y < height - 1; y++)
+                {
+                    Vector2 position = new(x, y);
+                    if (playerCurrentLocation.isTilePassable(position))
+                    {
+                        walkables.Add(position);
+                    }
+                }
+            }
+
+            List<Vector2> validatedWalkables = new();
+            List<Vector2> toTest = new();
+            Vector2 point = new(farmer.TilePoint.X, farmer.TilePoint.Y);
+            if (walkables.Contains(point))
+            {
+                walkables.Remove(point);
+                toTest.Add(point);
+            }
+            else
+            {
+                Console.Out.WriteLine("current tile is not walkable");
+                return;
+            }
+            while (toTest.Count > 0)
+            {
+                point = toTest[0];
+                validatedWalkables.Add(point);
+                toTest.RemoveAt(0);
+                point += new Vector2(1, 0);
+                if (walkables.Contains(point))
+                {
+                    walkables.Remove(point);
+                    toTest.Add(point);
+                }
+                point += new Vector2(-1, -1);
+                if (walkables.Contains(point))
+                {
+                    walkables.Remove(point);
+                    toTest.Add(point);
+                }
+                point += new Vector2(-1, 1);
+                if (walkables.Contains(point))
+                {
+                    walkables.Remove(point);
+                    toTest.Add(point);
+                }
+                point += new Vector2(1, 1);
+                if (walkables.Contains(point))
+                {
+                    walkables.Remove(point);
+                    toTest.Add(point);
+                }
+            }
+
+            const string tileFile = "tiles.json";
+            Dictionary<string, List<Vector2>> dictionary;
+            if (File.Exists(tileFile))
+            {
+                dictionary =
+                    JsonConvert.DeserializeObject<Dictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
+            }
+            else
+            {
+                dictionary = new Dictionary<string, List<Vector2>>();
+            }
+
+            validatedWalkables.Sort(((vector2, vector3) => vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
+            string displayedName = arg2.Length switch
+            {
+                0 => playerCurrentLocation.DisplayName,
+                _ => arg2[0] switch
+                {
+                    "0" => string.Join(' ', arg2.Skip(1)),
+                    "1" => playerCurrentLocation.DisplayName,
+                    "2" => playerCurrentLocation.Name,
+                    _ => throw new ArgumentException()
+                },
+            };
+
+            if (dictionary.ContainsKey(displayedName))
+                dictionary[displayedName] = validatedWalkables;
+            else
+                dictionary.Add(displayedName, validatedWalkables);
+            File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary));
+            Console.Out.WriteLine("Finished finding walkable tiles");
+        }
+
+        private void ConvertWalkablesToCSV(string arg1, string[] arg2)
+        {
+            const string tileFile = "tiles.json";
+            Dictionary<string, List<Vector2>> dictionary = JsonConvert.DeserializeObject<Dictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
+
+            const string locationFile = "tilesanity.csv";
+            int id = 19_000;
+            string locationText = "id,region,name,tags,mod_name\n";
+            foreach ((string map, List<Vector2> tiles) in dictionary)
+            {
+                id += 1_000 - id % 1_000;
+                foreach ((float x, float y) in tiles)
+                {
+                    string name = $"Tilesanity: {map} ({x}-{y})";
+                    locationText += $"{id++},{map},{name},TILESANITY,\n";
+                }
+            }
+            File.WriteAllText(locationFile, locationText);
+            Console.Out.WriteLine("CSV updated");
+        }
+
+        private void CurrentTile(string arg1, string[] arg2)
+        {
+            Farmer player = Game1.player;
+            (int x, int y) = player.TilePoint;
+            GameLocation playerCurrentLocation = player.currentLocation;
+            Map map = playerCurrentLocation.map;
+            if (x <= 0 || y <= 0 || x >= map.DisplayWidth / 64 - 1 || y >= map.DisplayHeight / 64 - 1)
+                Console.Out.WriteLine("Out of bounds!");
+            else
+                Console.Out.WriteLine($"{x}, {y}, {playerCurrentLocation.Name}, {playerCurrentLocation.DisplayName}");
         }
 
 #endif

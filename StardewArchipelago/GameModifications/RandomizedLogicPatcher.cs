@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewArchipelago.Archipelago;
 using StardewArchipelago.GameModifications.CodeInjections;
 using StardewArchipelago.GameModifications.CodeInjections.Television;
+using StardewArchipelago.GameModifications.CodeInjections.Tilesanity;
 using StardewArchipelago.GameModifications.EntranceRandomizer;
 using StardewArchipelago.GameModifications.Seasons;
 using StardewArchipelago.GameModifications.Tooltips;
@@ -71,6 +72,8 @@ namespace StardewArchipelago.GameModifications
             ItemTooltipInjections.Initialize(monitor, modHelper, archipelago, locationChecker, nameSimplifier);
             BillboardInjections.Initialize(monitor, modHelper, archipelago, locationChecker, friends);
             SpecialOrderBoardInjections.Initialize(monitor, modHelper, archipelago, locationChecker);
+            WalkSanityInjections.Initialize(monitor, archipelago, locationChecker);
+            TileUI.Initialize(archipelago, locationChecker);
 
             DebugPatchInjections.Initialize(monitor, archipelago);
         }
