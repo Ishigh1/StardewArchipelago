@@ -3,6 +3,7 @@ using System.Linq;
 using HarmonyLib;
 using StardewArchipelago.Archipelago;
 using StardewArchipelago.Archipelago.Gifting;
+using StardewArchipelago.GameModifications.CodeInjections.Tilesanity;
 using StardewArchipelago.Items.Mail;
 using StardewArchipelago.Items.Traps;
 using StardewArchipelago.Locations;
@@ -69,8 +70,11 @@ namespace StardewArchipelago.Items
                     return;
                 }
             }
-            var attachment = _itemParser.ProcessItemAsLetter(receivedItem);
-            attachment.SendToPlayer(_mail);
+            if (!TileUI.ProcessItem(receivedItem))
+            {
+                var attachment = _itemParser.ProcessItemAsLetter(receivedItem);
+                attachment.SendToPlayer(_mail);
+            }
         }
 
         public List<ReceivedItem> GetAllItemsAlreadyProcessed()
