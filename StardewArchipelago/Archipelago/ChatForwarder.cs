@@ -361,21 +361,21 @@ namespace StardewArchipelago.Archipelago
                 case $"{COMMAND_PREFIX}walk":
                 {
                     const string tileFile = "tiles.json";
-                    var dictionary = JsonConvert.DeserializeObject<Dictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
+                    var dictionary = JsonConvert.DeserializeObject<SortedDictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
                     dictionary[TileSanityManager.GetMapName(Game1.player)].Add(Game1.currentCursorTile);
                     dictionary[TileSanityManager.GetMapName(Game1.player)].Sort(((vector2, vector3) =>
                         vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
-                    File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary));
+                    File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary, Formatting.Indented));
                     break;
                 }
                 case $"{COMMAND_PREFIX}unwalk":
                 {
                     const string tileFile = "tiles.json";
-                    var dictionary = JsonConvert.DeserializeObject<Dictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
+                    var dictionary = JsonConvert.DeserializeObject<SortedDictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
                     dictionary[TileSanityManager.GetMapName(Game1.player)].Remove(Game1.currentCursorTile);
                     dictionary[TileSanityManager.GetMapName(Game1.player)].Sort(((vector2, vector3) =>
                         vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
-                    File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary));
+                    File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary, Formatting.Indented));
                     break;
                 }
             }

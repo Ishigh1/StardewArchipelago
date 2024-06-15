@@ -697,15 +697,15 @@ namespace StardewArchipelago
             }
 
             const string tileFile = "tiles.json";
-            Dictionary<string, List<Vector2>> dictionary;
+            SortedDictionary<string, List<Vector2>> dictionary;
             if (File.Exists(tileFile))
             {
                 dictionary =
-                    JsonConvert.DeserializeObject<Dictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
+                    JsonConvert.DeserializeObject<SortedDictionary<string, List<Vector2>>>(File.ReadAllText(tileFile));
             }
             else
             {
-                dictionary = new Dictionary<string, List<Vector2>>();
+                dictionary = new SortedDictionary<string, List<Vector2>>();
             }
 
             validatedWalkables.Sort(((vector2, vector3) => vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
@@ -730,7 +730,7 @@ namespace StardewArchipelago
                 dictionary[displayedName] = validatedWalkables;
             else
                 dictionary.Add(displayedName, validatedWalkables);
-            File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary));
+            File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary, Formatting.Indented));
             Console.Out.WriteLine("Finished finding walkable tiles");
         }
 
@@ -763,8 +763,9 @@ namespace StardewArchipelago
                 select entry;
 
             const string locationFile = "tilesanity.csv";
-            var id = 19_000;
-            var locationText = "id,region,name,tags,mod_name\n";
+            var id = 20_000;
+            var locationText = "id,region,name,tags,mod_name\n" +
+                               "20000,None,Progressive Tile,NOT_TILE,\n";
             var previous_map = "";
             foreach (var ((map, x, y), real) in sortedDict)
             {
