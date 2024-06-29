@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Newtonsoft.Json;
 using StardewArchipelago.Archipelago;
 using StardewArchipelago.Locations;
 using StardewModdingAPI.Events;
@@ -158,7 +161,22 @@ namespace StardewArchipelago.GameModifications.CodeInjections.Tilesanity
                 default:
                     return false;
             }
+        }
 
+        public static void SwitchToDebug(List<Vector2> tiles)
+        {
+            for (var i = 0; i < _tileColors.GetLength(0); i++)
+            {
+                for (var j = 0; j < _tileColors.GetLength(1); j++)
+                {
+                    _tileColors[i, j] = -1;
+                }
+            }
+            
+            foreach (var (x, y) in tiles)
+            {
+                _tileColors[(int) x, (int) y] = 2;
+            }
         }
     }
 }

@@ -366,6 +366,7 @@ namespace StardewArchipelago.Archipelago
                     dictionary[TileSanityManager.GetMapName(Game1.player)].Sort(((vector2, vector3) =>
                         vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
                     File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary, Formatting.Indented));
+                    TileUI.SwitchToDebug(dictionary[TileSanityManager.GetMapName(Game1.player)]);
                     break;
                 }
                 case $"{COMMAND_PREFIX}unwalk":
@@ -376,6 +377,7 @@ namespace StardewArchipelago.Archipelago
                     dictionary[TileSanityManager.GetMapName(Game1.player)].Sort(((vector2, vector3) =>
                         vector2.X.CompareTo(vector3.X) * 2 + vector2.Y.CompareTo(vector3.Y)));
                     File.WriteAllText(tileFile, JsonConvert.SerializeObject(dictionary, Formatting.Indented));
+                    TileUI.SwitchToDebug(dictionary[TileSanityManager.GetMapName(Game1.player)]);
                     break;
                 }
             }
