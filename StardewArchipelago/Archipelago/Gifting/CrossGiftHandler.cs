@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Archipelago.Gifting.Net.Service;
 using Archipelago.Gifting.Net.Traits;
 using Archipelago.Gifting.Net.Utilities.CloseTraitParser;
@@ -9,6 +11,7 @@ using StardewArchipelago.Items.Mail;
 using StardewArchipelago.Stardew;
 using StardewModdingAPI;
 using StardewValley;
+using Object = StardewValley.Object;
 
 namespace StardewArchipelago.Archipelago.Gifting
 {
@@ -102,7 +105,18 @@ namespace StardewArchipelago.Archipelago.Gifting
 
         public void ExportAllGifts(string filePath)
         {
-            var items = GetAllGiftAndTraitsByName();
+            Dictionary<string, GiftTrait[]> items = GetAllGiftAndTraitsByName();
+            var allTraits = new List<GiftTrait>();
+            foreach (var (key, value) in items)
+            {
+                foreach (var giftTrait in value)
+                {
+                    if (allTraits.All(trait => trait.Trait != giftTrait.Trait))
+                        allTraits.Add(giftTrait);
+                }
+            }
+            allTraits.Sort((trait, giftTrait) => String.Compare(trait.Trait, giftTrait.Trait, StringComparison.Ordinal));
+            items.Add("all", allTraits.ToArray());
             var objectsAsJson = JsonConvert.SerializeObject(items);
             File.WriteAllText(filePath, objectsAsJson);
         }
