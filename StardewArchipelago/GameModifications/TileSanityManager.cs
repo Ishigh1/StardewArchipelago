@@ -23,6 +23,8 @@ public class TileSanityManager
     private readonly IMonitor _monitor;
 
     private static int _tilesanitySize;
+    private static string _currentLocation;
+    private static string _currentMapName;
 
     public TileSanityManager(Harmony harmony, StardewArchipelagoClient archipelago, StardewLocationChecker locationChecker, IMonitor monitor)
     {
@@ -38,33 +40,46 @@ public class TileSanityManager
 
     public static string GetMapName(Farmer farmer)
     {
-
-        var map = farmer.currentLocation.DisplayName;
-        if (map == $"{farmer.farmName} Farm")
+        var internalMapName = farmer.currentLocation.Name;
+        if (internalMapName != _currentLocation)
         {
-            map = farmer.currentLocation.Name;
-            if (map == "Farm")
+            string mapName;
+            var map = farmer.currentLocation.DisplayName;
+            if (map == $"{farmer.farmName} Farm")
             {
-                return $"{Game1.GetFarmTypeKey()} Farm";
+                if (map == "Farm")
+                {
+                    mapName = $"{Game1.GetFarmTypeKey().Replace("Farm", "")} Farm"; // Meadowlands farmtype is MeadowlandsFarm
+                }
+                else
+                {
+                    mapName = internalMapName;
+                }
             }
-        }
-        return map switch
-        {
-            "Club" => "Casino",
-            "IslandWestCave1" => "Colored Crystals Cave",
-            "IslandNorthCave1" => "Island Mushroom Cave",
-            "Wizard's Tower" when farmer.currentLocation.Name == "WizardHouseBasement" => "WizardBasement",
-            "Spa" => farmer.currentLocation.Name switch
+            else
             {
-                "BathHouse_Entry" => "Bathhouse Entrance",
-                "BathHouse_MensLocker" => "Men's Locker Room",
-                "BathHouse_WomensLocker" => "Women's Locker Room",
-                _ => "Public Bath",
-            },
-            "QiNutRoom" => "Qi's Walnut Room",
-            "CaptainRoom" => "Shipwreck",
-            _ => map
-        };
+                mapName = map switch
+                {
+                    "Club" => "Casino",
+                    "IslandWestCave1" => "Colored Crystals Cave",
+                    "IslandNorthCave1" => "Island Mushroom Cave",
+                    "Wizard's Tower" when internalMapName == "WizardHouseBasement" => "WizardBasement",
+                    "Spa" => internalMapName switch
+                    {
+                        "BathHouse_Entry" => "Bathhouse Entrance",
+                        "BathHouse_MensLocker" => "Men's Locker Room",
+                        "BathHouse_WomensLocker" => "Women's Locker Room",
+                        _ => "Public Bath",
+                    },
+                    "QiNutRoom" => "Qi's Walnut Room",
+                    "CaptainRoom" => "Shipwreck",
+                    _ => map,
+                };
+            }
+            _currentMapName = mapName;
+            _currentLocation = internalMapName;
+        }
+        return _currentMapName;
     }
 
     public string GetTileName(int x, int y, Farmer farmer)
