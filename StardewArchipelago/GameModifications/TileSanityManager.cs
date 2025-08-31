@@ -49,7 +49,12 @@ public class TileSanityManager
             {
                 if (map == "Farm")
                 {
-                    mapName = $"{Game1.GetFarmTypeKey().Replace("Farm", "")} Farm"; // Meadowlands farmtype is MeadowlandsFarm
+                    mapName = Game1.GetFarmTypeKey() switch
+                    {
+                        "FourCorners" => "Four Corners Farm",
+                        "MeadowlandsFarm" => "Meadowlands Farm",
+                        var farmName => $"{farmName} Farm",
+                    };
                 }
                 else
                 {
