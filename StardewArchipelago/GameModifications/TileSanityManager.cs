@@ -47,7 +47,7 @@ public class TileSanityManager
             var map = farmer.currentLocation.DisplayName;
             if (map == $"{farmer.farmName} Farm")
             {
-                if (map == "Farm")
+                if (internalMapName == "Farm")
                 {
                     mapName = Game1.GetFarmTypeKey() switch
                     {
