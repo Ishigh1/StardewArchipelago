@@ -97,6 +97,7 @@ namespace StardewArchipelago
 
         public ArchipelagoStateDto State { get; set; }
         public ILogger Logger => _logger;
+        public BundlesManager BundlesManager => _bundlesManager;
 
         public ModEntry() : base()
         {
@@ -463,7 +464,7 @@ namespace StardewArchipelago
             TheaterInjections.UpdateScheduleForEveryone();
             Helper.GameContent.InvalidateCache("Data/Shops"); // This should be reworked someday
 
-            var bugFixer = new BugFixer(_logger, _locationChecker);
+            var bugFixer = new BugFixer(_archipelago, _logger, _locationChecker);
             bugFixer.FixKnownBugs();
 
             _hintHelper.GiveHintTip(_archipelago.GetSession());

@@ -85,6 +85,8 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
         public Texture2D HumbleBundleTexture;
         private BundleButton _donateButton;
         public Dictionary<BundleButton, Action> ExtraButtons;
+        private Texture2D _normalAlGoreRhythmTexture = null;
+        private Texture2D _evilAlGoreRhythmTexture = null;
 
         public ArchipelagoJunimoNoteMenu(bool fromGameMenu, int area = 1, bool fromThisMenu = false) : base(fromGameMenu, area, fromThisMenu)
         {
@@ -347,14 +349,14 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
 
         public override string GetRewardNameForArea(int whichArea)
         {
-            if (TryGetSpecialRewardName(whichArea, out var specialRewardName))
-            {
-                return specialRewardName;
-            }
-
             string apLocationToScout;
             if (SpecificBundlePage)
             {
+                if (TryGetSpecialRewardName(out var specialRewardName))
+                {
+                    return specialRewardName;
+                }
+
                 if (!TryGetBundleLocationToScout(out apLocationToScout))
                 {
                     return base.GetRewardNameForArea(whichArea);
@@ -385,21 +387,22 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
             return rewardText;
         }
 
-        private bool TryGetSpecialRewardName(int whichArea, out string specialRewardName)
+        private bool TryGetSpecialRewardName(out string specialRewardName)
         {
-            if (TryGetClickbaitRewardName(whichArea, out specialRewardName))
-            {
-                return true;
-            }
-
-            if (TryGetInvestmentBundleRewardName(whichArea, out specialRewardName))
-            {
-                return true;
-            }
-
+            specialRewardName = "";
             if (CurrentPageBundle == null)
             {
                 return false;
+            }
+
+            if (TryGetClickbaitRewardName(out specialRewardName))
+            {
+                return true;
+            }
+
+            if (TryGetInvestmentBundleRewardName(out specialRewardName))
+            {
+                return true;
             }
 
             if (CurrentPageBundle.name == MemeBundleNames.HINT)
@@ -411,9 +414,9 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
             return false;
         }
 
-        private bool TryGetClickbaitRewardName(int whichArea, out string specialRewardName)
+        private bool TryGetClickbaitRewardName(out string specialRewardName)
         {
-            if (CurrentPageBundle == null || CurrentPageBundle.name != MemeBundleNames.CLICKBAIT)
+            if (CurrentPageBundle.name != MemeBundleNames.CLICKBAIT)
             {
                 specialRewardName = "";
                 return false;
@@ -452,9 +455,9 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
             return true;
         }
 
-        private bool TryGetInvestmentBundleRewardName(int whichArea, out string specialRewardName)
+        private bool TryGetInvestmentBundleRewardName(out string specialRewardName)
         {
-            if (CurrentPageBundle == null || (CurrentPageBundle.name != MemeBundleNames.SCAM && CurrentPageBundle.name != MemeBundleNames.INVESTMENT))
+            if (CurrentPageBundle.name != MemeBundleNames.SCAM && CurrentPageBundle.name != MemeBundleNames.INVESTMENT)
             {
                 specialRewardName = "";
                 return false;
@@ -764,7 +767,7 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
 
         protected override void SetUpPurchaseButton()
         {
-            if (CurrentPageBundle.name == MemeBundleNames.NFT || CurrentPageBundle.name == MemeBundleNames.DEATH || CurrentPageBundle.name == MemeBundleNames.HONEYWELL || CurrentPageBundle.name == MemeBundleNames.HINT)
+            if (CurrentPageBundle.name is MemeBundleNames.NFT or MemeBundleNames.DEATH or MemeBundleNames.HONEYWELL or MemeBundleNames.HINT or MemeBundleNames.CONNECTION or MemeBundleNames.RECONNECTION)
             {
                 return;
             }
@@ -1902,10 +1905,6 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
                 var sap = ItemRegistry.GetDataOrErrorItem(QualifiedItemIds.SAP);
                 var seed = Game1.ticks / 10;
                 var random = new Random(seed);
-                if (random.NextDouble() < 0.01)
-                {
-                    var a = 5;
-                }
                 var maxDistance = 32;
                 var mouseOffset = 32;
                 for (var i = 0.0; i <= 1; i += 0.02)
@@ -2480,6 +2479,26 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla.Bundles
             {
                 _slidingPuzzle.DrawPuzzle(b, xPositionOnScreen, yPositionOnScreen);
                 return;
+            }
+
+            if (CurrentPageBundle.name == MemeBundleNames.THEALGORERHYTM)
+            {
+                if (HeldItem != null && HeldItem.Stack <= 1)
+                {
+                    if (_evilAlGoreRhythmTexture == null)
+                    {
+                        _evilAlGoreRhythmTexture = BundleIcons.GetBundleIcon(_logger, _modHelper, CurrentPageBundle.name + "_evil", LogLevel.Trace);
+                    }
+                    CurrentPageBundle.BundleTextureOverride = _evilAlGoreRhythmTexture;
+                }
+                else
+                {
+                    if (_normalAlGoreRhythmTexture == null)
+                    {
+                        _normalAlGoreRhythmTexture = BundleIcons.GetBundleIcon(_logger, _modHelper, CurrentPageBundle.name, LogLevel.Trace);
+                    }
+                    CurrentPageBundle.BundleTextureOverride = _normalAlGoreRhythmTexture;
+                }
             }
             base.DrawBundleTexture(b);
         }

@@ -1,31 +1,35 @@
-﻿using System;
-using StardewModdingAPI;
-using StardewValley;
+﻿using KaitoKid.ArchipelagoUtilities.Net;
+using KaitoKid.ArchipelagoUtilities.Net.Constants;
 using KaitoKid.ArchipelagoUtilities.Net.Interfaces;
-using KaitoKid.ArchipelagoUtilities.Net;
+using Microsoft.Xna.Framework;
+using Netcode;
 using StardewArchipelago.Archipelago;
 using StardewArchipelago.Archipelago.SlotData.SlotEnums;
+using StardewArchipelago.Constants.Vanilla;
 using StardewArchipelago.GameModifications.CodeInjections;
+using StardewArchipelago.Goals;
 using StardewArchipelago.Locations.Secrets;
 using StardewArchipelago.Logging;
 using StardewArchipelago.Stardew.NameMapping;
-using StardewValley.GameData.Objects;
-using Object = StardewValley.Object;
+using StardewModdingAPI;
+using StardewValley;
 using StardewValley.Buffs;
+using StardewValley.Extensions;
+using StardewValley.GameData.Buffs;
+using StardewValley.GameData.Objects;
+using StardewValley.Locations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using KaitoKid.ArchipelagoUtilities.Net.Constants;
-using Microsoft.Xna.Framework;
-using StardewArchipelago.Constants.Vanilla;
-using StardewValley.GameData.Buffs;
-using StardewValley.Extensions;
-using StardewValley.Locations;
-using Netcode;
+using Object = StardewValley.Object;
 
 namespace StardewArchipelago.Locations.CodeInjections.Vanilla
 {
     public static class EatInjections
     {
+        public const string EAT_PREFIX = "Eat ";
+        public const string DRINK_PREFIX = "Drink ";
+
         private static ILogger _logger;
         private static IModHelper _modHelper;
         private static StardewArchipelagoClient _archipelago;
@@ -211,7 +215,7 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
             var name = _nameSimplifier.GetSimplifiedName(eatenItem);
             name = _nameMapper.GetEnglishName(name); // For the Name vs Display Name discrepencies in Mods.
 
-            var apLocation = objectData.IsDrink ? $"Drink {name}" : $"Eat {name}";
+            var apLocation = objectData.IsDrink ? $"{DRINK_PREFIX}{name}" : $"{EAT_PREFIX}{name}";
             if (_archipelago.GetLocationId(apLocation) > -1)
             {
                 _locationChecker.AddCheckedLocation(apLocation);
@@ -220,6 +224,8 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
             {
                 _logger.LogError($"Unrecognized Eatsanity Location: {apLocation} ({name} [{eatenItem.QualifiedItemId}])");
             }
+
+            GoalCodeInjection.CheckUltimateFoodieGoalCompletion();
         }
 
         // public override int staminaRecoveredOnConsumption()
@@ -227,6 +233,12 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
         {
             try
             {
+                if (__result < 0)
+                {
+                    // Penalties are not blocked!
+                    return;
+                }
+
                 var numberEnzymes = _archipelago.GetReceivedItemCount("Stamina Enzyme");
                 if (numberEnzymes <= 0)
                 {
@@ -259,7 +271,7 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
 
                 if (numberEnzymes >= 10)
                 {
-                    // Max enzymes, max health!
+                    // Max enzymes, max stamina!
                     return;
                 }
 
@@ -294,6 +306,12 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
         {
             try
             {
+                if (__result < 0)
+                {
+                    // Penalties are not blocked!
+                    return;
+                }
+
                 var numberEnzymes = _archipelago.GetReceivedItemCount("Health Enzyme");
                 if (numberEnzymes <= 0)
                 {
@@ -429,6 +447,7 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
             var newBuffEffects = new BuffEffects();
             var newBuffData = new BuffAttributesData();
 
+            newBuffData.Attack = Math.Min(maxBuffEffects.Attack.Value, defaultEffects.Attack.Value);
             newBuffData.Speed = Math.Min(maxBuffEffects.Speed.Value, defaultEffects.Speed.Value);
             newBuffData.LuckLevel = Math.Min(maxBuffEffects.LuckLevel.Value, defaultEffects.LuckLevel.Value);
             newBuffData.FarmingLevel = Math.Min(maxBuffEffects.FarmingLevel.Value, defaultEffects.FarmingLevel.Value);
@@ -462,6 +481,7 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
             newBuffData.MiningLevel = _archipelago.GetReceivedItemCount("Mining Enzyme");
             newBuffData.MagneticRadius = _archipelago.GetReceivedItemCount("Magnetism Enzyme") * 32;
             newBuffData.Defense = _archipelago.GetReceivedItemCount("Defense Enzyme");
+            newBuffData.Attack = _archipelago.GetReceivedItemCount("Attack Enzyme");
             newBuffData.MaxStamina = _archipelago.GetReceivedItemCount("Max Stamina Enzyme") * 20;
 
             return new BuffEffects(newBuffData);
@@ -476,6 +496,7 @@ namespace StardewArchipelago.Locations.CodeInjections.Vanilla
            items.extend(item_factory(item) for item in ["Mining Enzyme"]*5)
            items.extend(item_factory(item) for item in ["Magnetism Enzyme"]*2)
            items.extend(item_factory(item) for item in ["Defense Enzyme"]*5)
+           items.extend(item_factory(item) for item in ["Attack Enzyme"]*5)
            items.extend(item_factory(item) for item in ["Max Stamina Enzyme"]*3)
 
            items.extend(item_factory(item) for item in ["Squid Ink Enzyme"])
